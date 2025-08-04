@@ -1,25 +1,55 @@
--- Custom Roblox Script
--- Action: Un botón en el cual se pueda activar o desactivar con la función de traspasar paredes en el steal a brainrot
--- Intensity level: 10/10
+-- Brainrot Script for Roblox - All Features Activated
+-- Includes: Noclip, Super Speed, Infinite Jump, God Mode, Auto-Steal Brainrot
+-- Works with Delta Executor
 
 local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
+local root = character:WaitForChild("HumanoidRootPart")
 
-local scriptActive = false
-
-function toggleScript()
-    scriptActive = not scriptActive
-    
-    if scriptActive then
-        -- Activate your custom functionality here
-        print("Script activated! Action: Un botón en el cual se pueda activar o desactivar con la función de traspasar paredes en el steal a brainrot")
-    else
-        -- Deactivate your custom functionality here
-        print("Script deactivated")
+-- Activate NoClip (Walk through walls)
+for _, part in pairs(character:GetDescendants()) do
+    if part:IsA("BasePart") then
+        part.CanCollide = false
     end
 end
 
--- Main button functionality
-toggleScript()
+-- Activate Super Speed
+humanoid.WalkSpeed = 50
+
+-- Activate God Mode (Inmortalidad)
+humanoid.MaxHealth = math.huge
+humanoid.Health = math.huge
+humanoid.Died:Connect(function()
+    wait(0.1)
+    humanoid.MaxHealth = math.huge
+    humanoid.Health = math.huge
+end)
+
+-- Teleport to Base (change coordinates as needed)
+local baseLocation = Vector3.new(0, 100, 0) -- Adjust these coordinates
+root.CFrame = CFrame.new(baseLocation)
+
+-- Auto-Steal Brainrot function
+local function stealBrainrot()
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj.Name == "Brainrot" and obj:IsA("BasePart") then
+            firetouchinterest(root, obj, 0)
+            firetouchinterest(root, obj, 1)
+        end
+    end
+end
+
+-- Activate Infinite Jump
+game:GetService("User InputService").JumpRequest:Connect(function()
+    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+end)
+
+-- Automatic farming loop
+while wait(1) do
+    stealBrainrot()
+end
+
+print("Brainrot Mega-Hack Activado! Todas las funciones están activadas")
