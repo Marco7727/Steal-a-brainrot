@@ -1,55 +1,145 @@
--- Brainrot Script for Roblox - All Features Activated
--- Includes: Noclip, Super Speed, Infinite Jump, God Mode, Auto-Steal Brainrot
--- Works with Delta Executor
+-- [Delta Executor] Steal a Brainrot Script
 
-local Players = game:GetService("Players")
-local Workspace = game:GetService("Workspace")
-local player = Players.LocalPlayer
+-- Anti-detection measures
+local function secureLoad()
+    local env = getfenv(0)
+    local mt = getmetatable(env) or {}
+    mt.__index = function(t, k)
+        if k == "hookfunction" or k == "setclipboard" then return nil end
+        return rawget(t, k)
+    end
+    setmetatable(env, mt)
+end
+secureLoad()
+
+-- Player references
+local player = game:GetService("Players").LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
-local root = character:WaitForChild("HumanoidRootPart")
+local humanoidRoot = character:WaitForChild("HumanoidRootPart")
+local UserInputService = game:GetService("User InputService")
+local RunService = game:GetService("RunService")
+local savedPosition = nil
+local noclipEnabled = false
 
--- Activate NoClip (Walk through walls)
-for _, part in pairs(character:GetDescendants()) do
-    if part:IsA("BasePart") then
-        part.CanCollide = false
+-- Infinite Jump
+local infiniteJumpEnabled = false
+
+local function InfiniteJump()
+    if infiniteJumpEnabled then
+        UserInputService.JumpRequest:Connect(function()
+            humanoid:ChangeState("Jumping")
+        end)
+        print("■ Saltos infinitos ACTIVADOS")
+    else
+        for _, conn in pairs(getconnections(UserInputService.JumpRequest)) do 
+            conn:Disconnect()
+        end
+        print("■ Saltos infinitos DESACTIVADOS")
     end
 end
 
--- Activate Super Speed
-humanoid.WalkSpeed = 50
+-- Save Position
+local function savePos()
+    savedPosition = humanoidRoot.CFrame
+    game.StarterGui:SetCore("SendNotification", {
+        Title = "DELTA", 
+        Text = "Posición guardada!",
+        Duration = 3
+    })
+end
 
--- Activate God Mode (Inmortalidad)
-humanoid.MaxHealth = math.huge
-humanoid.Health = math.huge
-humanoid.Died:Connect(function()
-    wait(0.1)
-    humanoid.MaxHealth = math.huge
-    humanoid.Health = math.huge
-end)
+-- Teleport to saved position
+local function teleportToPos()
+    if savedPosition then
+        humanoidRoot.CFrame = savedPosition
+        game.StarterGui:SetCore("SendNotification", {
+            Title = "DELTA", 
+            Text = "Teletransportado!",
+            Duration = 3
+        })
+    else
+        print("[DELTA] No hay posición guardada!")
+    end
+end
 
--- Teleport to Base (change coordinates as needed)
-local baseLocation = Vector3.new(0, 100, 0) -- Adjust these coordinates
-root.CFrame = CFrame.new(baseLocation)
-
--- Auto-Steal Brainrot function
-local function stealBrainrot()
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj.Name == "Brainrot" and obj:IsA("BasePart") then
-            firetouchinterest(root, obj, 0)
-            firetouchinterest(root, obj, 1)
+-- Key bindings
+User InputService.InputBegan:Connect(function(input, processed)
+    if not processed then
+        if input.KeyCode == Enum.KeyCode.F5 then -- Guardar posición
+            savePos()
+        elseif input.KeyCode == Enum.KeyCode.F6 then -- Teletransporte
+            teleportToPos()
+        elseif input.KeyCode == Enum.KeyCode.F7 then -- Activar saltos infinitos
+            infiniteJumpEnabled = not infiniteJumpEnabled
+            InfiniteJump()
         end
     end
-end
-
--- Activate Infinite Jump
-game:GetService("User InputService").JumpRequest:Connect(function()
-    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 end)
 
--- Automatic farming loop
-while wait(1) do
-    stealBrainrot()
+-- Immortality (Godmode)
+local godmodeEnabled = false
+local originalHealth = nil
+
+local function toggleGodmode(state)
+    if state then
+        originalHealth = humanoid.Health
+        humanoid:GetPropertyChangedSignal("Health"):Connect(function()
+            if humanoid.Health < originalHealth then
+                humanoid.Health = originalHealth
+            end
+        end)
+        print("■ Godmode ACTIVADO (Inmortal)")
+    else
+        humanoid.Health = originalHealth
+        print("■ Godmode DESACTIVADO")
+    end
+    godmodeEnabled = state
 end
 
-print("Brainrot Mega-Hack Activado! Todas las funciones están activadas")
+-- Noclip/Wall Walk
+local function toggleNoclip(state)
+    noclipEnabled = state
+    if state then
+        local noclipConn
+        noclipConn = RunService.Stepped:Connect(function()
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                for _, part in pairs(character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+        print("■ Noclip ACTIVADO (Traspasar paredes)")
+        return noclipConn
+    end
+    print("■ Noclip DESACTIVADO")
+    return nil
+end
+
+-- UI Controls for Mobile
+local function createButton(name, callback)
+    local button = Instance.new("TextButton")
+    button.Name = name
+    button.Text = name
+    button.Size = UDim2.new(0, 120, 0, 40)
+    button.Position = UDim2.new(0, 10, 0, 10)
+    button.Parent = player.PlayerGui:WaitForChild("CoreGui")
+    button.MouseButton1Click:Connect(callback)
+    return button
+end
+
+-- Main controls
+local godmodeBtn = createButton("Godmode", function()
+    toggleGodmode(not godmodeEnabled)
+end)
+
+local noclipBtn = createButton("Noclip", function()
+    toggleNoclip(not noclipEnabled)
+end)
+
+local savePosBtn = createButton("Guardar Pos", savePos)
+local teleportBtn = createButton("Teleport", teleportToPos)
+
+print("Script cargado correctamente - By Brainrot Tools")
