@@ -1,81 +1,69 @@
--- Brainrot Script by Telegraph
--- Funciones: Noclip, Super Velocidad, Saltos Infinitos
-
--- Configuración inicial
-local player = game:GetService("Players").LocalPlayer
+-- Variables
+local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
-local rootPart = character:WaitForChild("HumanoidRootPart")
+local UIS = game:GetService("User InputService")
+local ScreenGui = Instance.new("ScreenGui")
+local Frame = Instance.new("Frame")
+local ImmortalButton = Instance.new("TextButton")
+local JumpButton = Instance.new("TextButton")
+local TeleportButton = Instance.new("TextButton")
 
--- Variables de estado
-local noclipEnabled = false
-local speedMultiplier = 3
-local originalWalkspeed = humanoid.WalkSpeed
-local infiniteJumpEnabled = false
+-- Configuración de la interfaz
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
+Frame.Size = UDim2.new(0.3, 0, 0.5, 0)
+Frame.Position = UDim2.new(0.35, 0, 0.25, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+Frame.Parent = ScreenGui
 
--- Función para activar/desactivar noclip
-local function toggleNoclip()
-    noclipEnabled = not noclipEnabled
-    for _, part in pairs(character:GetDescendants()) do
-        if part:IsA("BasePart") then
-            part.CanCollide = not noclipEnabled
-        end
-    end
-    print("Noclip", noclipEnabled and "activado" or "desactivado")
-end
+-- Botón de Inmortalidad
+ImmortalButton.Size = UDim2.new(1, 0, 0.2, 0)
+ImmortalButton.Position = UDim2.new(0, 0, 0, 0)
+ImmortalButton.Text = "Toggle Immortal"
+ImmortalButton.Parent = Frame
 
--- Función para velocidad aumentada
-local function toggleSpeedBoost()
-    if humanoid.WalkSpeed == originalWalkspeed then
-        humanoid.WalkSpeed = originalWalkspeed * speedMultiplier
+-- Botón de Saltos Infinitos
+JumpButton.Size = UDim2.new(1, 0, 0.2, 0)
+JumpButton.Position = UDim2.new(0, 0, 0.2, 0)
+JumpButton.Text = "Toggle Infinite Jump"
+JumpButton.Parent = Frame
+
+-- Botón de Teleportar a la Base
+TeleportButton.Size = UDim2.new(1, 0, 0.2, 0)
+TeleportButton.Position = UDim2.new(0, 0, 0.4, 0)
+TeleportButton.Text = "Teleport to Base"
+TeleportButton.Parent = Frame
+
+-- Funciones
+local immortal = false
+local infiniteJump = false
+
+ImmortalButton.MouseButton1Click:Connect(function()
+    immortal = not immortal
+    if immortal then
+        character.Humanoid.MaxHealth = math.huge
+        character.Humanoid.Health = math.huge
+        ImmortalButton.Text = "Immortal: ON"
     else
-        humanoid.WalkSpeed = originalWalkspeed
-    end
-    print("Velocidad", humanoid.WalkSpeed > originalWalkspeed and "aumentada" or "normal")
-end
-
--- Función para saltos infinitos
-local function toggleInfiniteJump()
-    infiniteJumpEnabled = not infiniteJumpEnabled
-    print("Saltos infinitos", infiniteJumpEnabled and "activados" or "desactivados")
-end
-
--- Loop principal para noclip
-game:GetService("RunService").Stepped:Connect(function()
-    if noclipEnabled then
-        for _, part in pairs(character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-            end
-        end
-    end
-    
-    if infiniteJumpEnabled then
-        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        character.Humanoid.MaxHealth = 100
+        character.Humanoid.Health = 100
+        ImmortalButton.Text = "Immortal: OFF"
     end
 end)
 
--- Interfaz simple para móviles
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "MobileCheatUI"
-screenGui.Parent = game:GetService("CoreGui")
+JumpButton.MouseButton1Click:Connect(function()
+    infiniteJump = not infiniteJump
+    if infiniteJump then
+        UIS.JumpRequest:Connect(function()
+            if infiniteJump then
+                character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end)
+        JumpButton.Text = "Infinite Jump: ON"
+    else
+        JumpButton.Text = "Infinite Jump: OFF"
+    end
+end)
 
-local function createButton(name, pos, func)
-    local button = Instance.new("TextButton")
-    button.Name = name
-    button.Size = UDim2.new(0, 120, 0, 50)
-    button.Position = UDim2.new(pos.X, pos.Y, 0, 20)
-    button.Text = name
-    button.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
-    button.TextColor3 = Color3.new(1, 1, 1)
-    button.Parent = screenGui
-    button.MouseButton1Click:Connect(func)
-    return button
-end
-
-createButton("Noclip", Vector2.new(0.5, -150), toggleNoclip)
-createButton("Velocidad+", Vector2.new(0.5, -20), toggleSpeedBoost)
-createButton("Salto Inf", Vector2.new(0.5, 110), toggleInfiniteJump)
-
-print("Script Brainrot cargado correctamente")
-print("Usa los botones en pantalla para activar funciones")
+TeleportButton.MouseButton1Click:Connect(function()
+    character:SetPrimaryPartCFrame(CFrame.new(0, 10, 0)) -- Cambia las coordenadas a tu base
+end)
