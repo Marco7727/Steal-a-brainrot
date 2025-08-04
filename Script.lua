@@ -1,14 +1,22 @@
 -- [Delta Executor] Steal a Brainrot Script
 
--- Anti-detection measures
+-- Anti-detection measures for mobile
 local function secureLoad()
-    local env = getfenv(0)
-    local mt = getmetatable(env) or {}
-    mt.__index = function(t, k)
-        if k == "hookfunction" or k == "setclipboard" then return nil end
-        return rawget(t, k)
-    end
-    setmetatable(env, mt)
+    -- Prevent detection from mobile anti-cheat
+    local mobileAntiBan = {
+        heartbeatCheck = function()
+            return nil -- Disable heartbeat checks
+        end,
+        disableModuleScanner = function()
+            -- Disable module scanning on mobile
+            for _,v in pairs(getloadedmodules()) do
+                if v.Name == "Scanner" then
+                    v.Disabled = true
+                end
+            end
+        end
+    }
+    mobileAntiBan.disableModuleScanner()
 end
 secureLoad()
 
@@ -63,16 +71,18 @@ local function teleportToPos()
     end
 end
 
--- Key bindings
-User InputService.InputBegan:Connect(function(input, processed)
+-- Mobile touch controls
+User InputService.TouchStarted:Connect(function(touch, processed)
     if not processed then
-        if input.KeyCode == Enum.KeyCode.F5 then -- Guardar posición
-            savePos()
-        elseif input.KeyCode == Enum.KeyCode.F6 then -- Teletransporte
-            teleportToPos()
-        elseif input.KeyCode == Enum.KeyCode.F7 then -- Activar saltos infinitos
+        local touchPos = touch.Position
+        -- Define touch zones for buttons
+        if touchPos.X < 200 and touchPos.Y < 200 then -- Example area for infinite jump
             infiniteJumpEnabled = not infiniteJumpEnabled
             InfiniteJump()
+        elseif touchPos.X < 400 and touchPos.Y < 200 then -- Example area for saving position
+            savePos()
+        elseif touchPos.X < 600 and touchPos.Y < 200 then -- Example area for teleport
+            teleportToPos()
         end
     end
 end)
@@ -118,28 +128,49 @@ local function toggleNoclip(state)
     return nil
 end
 
--- UI Controls for Mobile
-local function createButton(name, callback)
-    local button = Instance.new("TextButton")
-    button.Name = name
-    button.Text = name
-    button.Size = UDim2.new(0, 120, 0, 40)
-    button.Position = UDim2.new(0, 10, 0, 10)
-    button.Parent = player.PlayerGui:WaitForChild("CoreGui")
-    button.MouseButton1Click:Connect(callback)
-    return button
+-- Main controls for mobile
+local function createMobileControls()
+    -- Create buttons for mobile UI
+    local jumpButton = Instance.new("TextButton")
+    jumpButton.Size = UDim2.new(0, 100, 0, 50)
+    jumpButton.Position = UDim2.new(0, 10, 0, 10)
+    jumpButton.Text = "Saltos Infinitos"
+    jumpButton.Parent = player.PlayerGui:WaitForChild("CoreGui")
+    jumpButton.MouseButton1Click:Connect(toggleInfiniteJump)
+
+    local saveButton = Instance.new("TextButton")
+    saveButton.Size = UDim2.new(0, 100, 0, 50)
+    saveButton.Position = UDim2.new(0, 120, 0, 10)
+    saveButton.Text = "Guardar Pos"
+    saveButton.Parent = player.PlayerGui:WaitForChild("CoreGui")
+    saveButton.MouseButton1Click:Connect(savePos)
+
+    local teleportButton = Instance.new("TextButton")
+    teleportButton.Size = UDim2.new(0, 100, 0, 50)
+    teleportButton.Position = UDim2.new(0, 230, 0, 10)
+    teleportButton.Text = "Teletransportar"
+    teleportButton.Parent = player.PlayerGui:WaitForChild("CoreGui")
+    teleportButton.MouseButton1Click:Connect(teleportToPos)
+
+    local godmodeButton = Instance.new("TextButton")
+    godmodeButton.Size = UDim2.new(0, 100, 0, 50)
+    godmodeButton.Position = UDim2.new(0, 340, 0, 10)
+    godmodeButton.Text = "Godmode"
+    godmodeButton.Parent = player.PlayerGui:WaitForChild("CoreGui")
+    godmodeButton.MouseButton1Click:Connect(function()
+        toggleGodmode(not godmodeEnabled)
+    end)
+
+    local noclipButton = Instance.new("TextButton")
+    noclipButton.Size = UDim2.new(0, 100, 0, 50)
+    noclipButton.Position = UDim2.new(0, 450, 0, 10)
+    noclipButton.Text = "Noclip"
+    noclipButton.Parent = player.PlayerGui:WaitForChild("CoreGui")
+    noclipButton.MouseButton1Click:Connect(function()
+        toggleNoclip(not noclipEnabled)
+    end)
 end
 
--- Main controls
-local godmodeBtn = createButton("Godmode", function()
-    toggleGodmode(not godmodeEnabled)
-end)
-
-local noclipBtn = createButton("Noclip", function()
-    toggleNoclip(not noclipEnabled)
-end)
-
-local savePosBtn = createButton("Guardar Pos", savePos)
-local teleportBtn = createButton("Teleport", teleportToPos)
+createMobileControls()
 
 print("Script cargado correctamente - By Brainrot Tools")
