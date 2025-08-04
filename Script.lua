@@ -1,4 +1,17 @@
--- [Delta Executor] Steal a Brainrot Script
+-- Delta Executor Script for Steal a Brainrot
+-- Make sure to inject this while in-game
+
+local player = game:GetService("Players").LocalPlayer
+repeat wait() until player.Character
+local humanoid = player.Character.Humanoid
+local root = player.Character.HumanoidRootPart
+local UIS = game:GetService("User InputService")
+local RunService = game:GetService("RunService")
+
+-- Simple anti-detection
+pcall(function() 
+    getconnections(game:GetService("ScriptContext").Error)(1):Disable()
+end)
 
 -- Anti-detection measures for mobile
 local function secureLoad()
@@ -21,156 +34,146 @@ end
 secureLoad()
 
 -- Player references
-local player = game:GetService("Players").LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
-local humanoidRoot = character:WaitForChild("HumanoidRootPart")
-local UserInputService = game:GetService("User InputService")
-local RunService = game:GetService("RunService")
 local savedPosition = nil
 local noclipEnabled = false
-
--- Infinite Jump
 local infiniteJumpEnabled = false
 
-local function InfiniteJump()
-    if infiniteJumpEnabled then
-        UserInputService.JumpRequest:Connect(function()
-            humanoid:ChangeState("Jumping")
-        end)
-        print("■ Saltos infinitos ACTIVADOS")
-    else
-        for _, conn in pairs(getconnections(UserInputService.JumpRequest)) do 
-            conn:Disconnect()
-        end
-        print("■ Saltos infinitos DESACTIVADOS")
+-- Working infinite jump for mobile
+local infiniteJump = false
+UIS.JumpRequest:Connect(function()
+    if infiniteJump then
+        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
     end
+end)
+
+local function setInfiniteJump(val)
+    infiniteJump = val
+    game.StarterGui:SetCore("SendNotification",{
+        Title = "Brainrot Tools",
+        Text = "Saltos Infinitos "..(val and "ON" or "OFF"),
+        Duration = 2
+    })
 end
 
 -- Save Position
-local function savePos()
-    savedPosition = humanoidRoot.CFrame
-    game.StarterGui:SetCore("SendNotification", {
-        Title = "DELTA", 
+local function savePosition()
+    savedPosition = root.CFrame
+    game.StarterGui:SetCore("SendNotification",{
+        Title = "Brainrot Tools",
         Text = "Posición guardada!",
-        Duration = 3
+        Duration = 2
     })
 end
 
 -- Teleport to saved position
-local function teleportToPos()
+local function teleportToPosition()
     if savedPosition then
-        humanoidRoot.CFrame = savedPosition
-        game.StarterGui:SetCore("SendNotification", {
-            Title = "DELTA", 
+        player.Character.HumanoidRootPart.CFrame = savedPosition
+        game.StarterGui:SetCore("SendNotification",{
+            Title = "Brainrot Tools",
             Text = "Teletransportado!",
-            Duration = 3
+            Duration = 2
         })
     else
-        print("[DELTA] No hay posición guardada!")
+        warn("No position saved!")
     end
 end
 
--- Mobile touch controls
-User InputService.TouchStarted:Connect(function(touch, processed)
-    if not processed then
-        local touchPos = touch.Position
-        -- Define touch zones for buttons
-        if touchPos.X < 200 and touchPos.Y < 200 then -- Example area for infinite jump
-            infiniteJumpEnabled = not infiniteJumpEnabled
-            InfiniteJump()
-        elseif touchPos.X < 400 and touchPos.Y < 200 then -- Example area for saving position
-            savePos()
-        elseif touchPos.X < 600 and touchPos.Y < 200 then -- Example area for teleport
-            teleportToPos()
-        end
-    end
-end)
-
--- Immortality (Godmode)
-local godmodeEnabled = false
-local originalHealth = nil
-
-local function toggleGodmode(state)
-    if state then
-        originalHealth = humanoid.Health
-        humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-            if humanoid.Health < originalHealth then
-                humanoid.Health = originalHealth
-            end
-        end)
-        print("■ Godmode ACTIVADO (Inmortal)")
-    else
-        humanoid.Health = originalHealth
-        print("■ Godmode DESACTIVADO")
-    end
-    godmodeEnabled = state
-end
-
--- Noclip/Wall Walk
+-- Noclip Functionality
+local noclipConnection = nil
 local function toggleNoclip(state)
     noclipEnabled = state
     if state then
-        local noclipConn
-        noclipConn = RunService.Stepped:Connect(function()
-            if character and character:FindFirstChild("HumanoidRootPart") then
-                for _, part in pairs(character:GetDescendants()) do
+        if noclipConnection then
+            noclipConnection:Disconnect()
+        end
+        noclipConnection = RunService.Stepped:Connect(function()
+            if player.Character then
+                for _, part in pairs(player.Character:GetDescendants()) do
                     if part:IsA("BasePart") then
                         part.CanCollide = false
                     end
                 end
             end
         end)
-        print("■ Noclip ACTIVADO (Traspasar paredes)")
-        return noclipConn
+        game.StarterGui:SetCore("SendNotification",{
+            Title = "Noclip",
+            Text = "Noclip ACTIVADO",
+            Duration = 3
+        })
+    elseif noclipConnection then
+        noclipConnection:Disconnect()
+        game.StarterGui:SetCore("SendNotification",{
+            Title = "Noclip",
+            Text = "Noclip DESACTIVADO",
+            Duration = 3
+        })
     end
-    print("■ Noclip DESACTIVADO")
-    return nil
 end
 
--- Main controls for mobile
-local function createMobileControls()
-    -- Create buttons for mobile UI
-    local jumpButton = Instance.new("TextButton")
-    jumpButton.Size = UDim2.new(0, 100, 0, 50)
-    jumpButton.Position = UDim2.new(0, 10, 0, 10)
-    jumpButton.Text = "Saltos Infinitos"
-    jumpButton.Parent = player.PlayerGui:WaitForChild("CoreGui")
-    jumpButton.MouseButton1Click:Connect(toggleInfiniteJump)
-
-    local saveButton = Instance.new("TextButton")
-    saveButton.Size = UDim2.new(0, 100, 0, 50)
-    saveButton.Position = UDim2.new(0, 120, 0, 10)
-    saveButton.Text = "Guardar Pos"
-    saveButton.Parent = player.PlayerGui:WaitForChild("CoreGui")
-    saveButton.MouseButton1Click:Connect(savePos)
-
-    local teleportButton = Instance.new("TextButton")
-    teleportButton.Size = UDim2.new(0, 100, 0, 50)
-    teleportButton.Position = UDim2.new(0, 230, 0, 10)
-    teleportButton.Text = "Teletransportar"
-    teleportButton.Parent = player.PlayerGui:WaitForChild("CoreGui")
-    teleportButton.MouseButton1Click:Connect(teleportToPos)
-
-    local godmodeButton = Instance.new("TextButton")
-    godmodeButton.Size = UDim2.new(0, 100, 0, 50)
-    godmodeButton.Position = UDim2.new(0, 340, 0, 10)
-    godmodeButton.Text = "Godmode"
-    godmodeButton.Parent = player.PlayerGui:WaitForChild("CoreGui")
-    godmodeButton.MouseButton1Click:Connect(function()
-        toggleGodmode(not godmodeEnabled)
-    end)
-
-    local noclipButton = Instance.new("TextButton")
-    noclipButton.Size = UDim2.new(0, 100, 0, 50)
-    noclipButton.Position = UDim2.new(0, 450, 0, 10)
-    noclipButton.Text = "Noclip"
-    noclipButton.Parent = player.PlayerGui:WaitForChild("CoreGui")
-    noclipButton.MouseButton1Click:Connect(function()
-        toggleNoclip(not noclipEnabled)
-    end)
+-- Godmode Functionality
+local godmodeEnabled = false
+local originalHealth = nil
+local godmodeConnection = nil
+local function toggleGodmode(state)
+    godmodeEnabled = state
+    if state then
+        if godmodeConnection then
+            godmodeConnection:Disconnect()
+        end
+        originalHealth = humanoid.Health
+        godmodeConnection = humanoid:GetPropertyChangedSignal("Health"):Connect(function()
+            if humanoid.Health < originalHealth then
+                humanoid.Health = originalHealth
+            end
+        end)
+        game.StarterGui:SetCore("SendNotification",{
+            Title = "Godmode",
+            Text = "Inmortalidad ACTIVADA",
+            Duration = 3
+        })
+    elseif godmodeConnection then
+        godmodeConnection:Disconnect()
+        game.StarterGui:SetCore("SendNotification",{
+            Title = "Godmode",
+            Text = "Inmortalidad DESACTIVADA",
+            Duration = 3
+        })
+    end
 end
 
-createMobileControls()
+-- Mobile touch controls
+local function createButton(name, position, callback)
+    local button = Instance.new("TextButton")
+    button.Name = name
+    button.Text = name
+    button.Size = UDim2.new(0, 120, 0, 40)
+    button.Position = position
+    button.Parent = player.PlayerGui:WaitForChild("CoreGui")
+    button.MouseButton1Click:Connect(callback)
+    return button
+end
 
-print("Script cargado correctamente - By Brainrot Tools")
+-- Create mobile buttons
+local jumpBtn = createButton("Saltos", UDim2.new(0, 20, 0, 20), function()
+    setInfiniteJump(not infiniteJump)
+end)
+
+local saveBtn = createButton("Guardar", UDim2.new(0, 150, 0, 20), savePosition)
+
+local tpBtn = createButton("Teleport", UDim2.new(0, 280, 0, 20), teleportToPosition)
+
+local godmodeBtn = createButton("Godmode", UDim2.new(0, 410, 0, 20), function()
+    toggleGodmode(not godmodeEnabled)
+end)
+
+local noclipBtn = createButton("Noclip", UDim2.new(0, 540, 0, 20), function()
+    toggleNoclip(not noclipEnabled)
+end)
+
+print("Brainrot Tools loaded successfully!")
+game.StarterGui:SetCore("SendNotification",{
+    Title = "Brainrot Tools",
+    Text = "Script cargado correctamente!",
+    Duration = 5
+})
